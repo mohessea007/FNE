@@ -1,0 +1,264 @@
+// Prisma schema for CloudFNE
+// Supports MySQL (development) and PostgreSQL (production)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USERS ====================
+model User {
+  id                Int       @id @default(autoincrement())
+  type_user         UserType  @default(admin)
+  username          String    @unique @db.VarChar(225)
+  password          String    @db.VarChar(225)
+  nom               String    @db.VarChar(225)
+  email             String?   @db.VarChar(225)
+  is_dev            Int       @default(0)
+  is_admin          Int       @default(0)
+  is_superadmin     Int       @default(0)
+  role              UserRole  @default(user)
+  companieid        Int?
+  clientid          Int?
+  created_by        Int       @default(0)
+  is_active         Boolean   @default(true)
+  last_login        DateTime?
+  date_creation     DateTime  @default(now())
+  date_modification DateTime  @updatedAt
+
+  // Relations
+  company                      Company?                 @relation(fields: [companieid], references: [id], onDelete: SetNull)
+  client                       Client?                  @relation(fields: [clientid], references: [id], onDelete: SetNull)
+  invoiceLogs                  InvoiceLog[]
+
+  @@index([companieid])
+  @@index([clientid])
+  @@index([type_user])
+  @@map("users")
+}
+
+enum UserType {
+  developer
+  superadmin
+  admin
+  owner
+}
+
+enum UserRole {
+  admin
+  user
+}
+
+// ==================== COMPANIES ====================
+model Company {
+  id                Int      @id @default(autoincrement())
+  uid_companie      String   @unique @db.VarChar(255)
+  token_fne         String   @db.Text
+  api_key           String?  @unique @db.VarChar(255)
+  nom               String   @db.VarChar(225)
+  ncc               String   @unique @db.VarChar(225)
+  commercialMessage String   @db.Text
+  footer            String   @db.Text
+  localisation      String   @db.Text
+  logo_url          String?  @db.VarChar(500)
+  is_active         Boolean  @default(true)
+  date_creation     DateTime @default(now())
+  date_modification DateTime @updatedAt
+
+  // Relations
+  users                   User[]
+  pointdeventes           PointDeVente[]
+  clients                 Client[]
+  invoices                Invoice[]
+  itemsInvoices           ItemInvoice[]
+  invoiceLogs             InvoiceLog[]
+
+  @@index([api_key])
+  @@index([ncc])
+  @@map("companies")
+}
+
+// ==================== POINTS DE VENTE ====================
+model PointDeVente {
+  id                Int      @id @default(autoincrement())
+  uid_companie      String   @db.VarChar(255)
+  nom               String   @db.VarChar(225)
+  is_default        Boolean  @default(false)
+  is_active         Boolean  @default(true)
+  date_creation     DateTime @default(now())
+  date_modification DateTime @updatedAt
+
+  // Relations
+  company     Company      @relation(fields: [uid_companie], references: [uid_companie], onDelete: Cascade)
+  clients     Client[]
+  invoices    Invoice[]
+  invoiceLogs InvoiceLog[]
+
+  @@index([uid_companie])
+  @@map("pointdeventes")
+}
+
+// ==================== CLIENTS ====================
+model Client {
+  id                Int        @id @default(autoincrement())
+  uid_companie      String     @db.VarChar(255)
+  ncc               String?    @db.VarChar(225)
+  clientCompanyName String?    @db.VarChar(225)
+  clientPhone       String?    @db.VarChar(225)
+  clientEmail       String?    @db.VarChar(225)
+  pointdeventeid    Int
+  type_client       ClientType @default(B2C)
+  is_active         Boolean    @default(true)
+  date_creation     DateTime   @default(now())
+  date_modification DateTime   @updatedAt
+
+  // Relations
+  company      Company      @relation(fields: [uid_companie], references: [uid_companie], onDelete: Cascade)
+  pointdevente PointDeVente @relation(fields: [pointdeventeid], references: [id], onDelete: Cascade)
+  invoices     Invoice[]
+  users        User[]
+
+  @@index([uid_companie])
+  @@index([pointdeventeid])
+  @@index([ncc])
+  @@map("clients")
+}
+
+enum ClientType {
+  B2B  // Entreprise ou professionnel possédant un NCC
+  B2F  // Client à l'international
+  B2G  // Institution gouvernementale
+  B2C  // Particulier
+}
+
+// ==================== INVOICES ====================
+model Invoice {
+  id                  Int           @id @default(autoincrement())
+  uid_companie        String        @db.VarChar(255)
+  pointdeventeid      Int
+  clientid            Int
+  uid_invoice         String        @unique @db.VarChar(255)
+  remise_montant      Int           @default(0)
+  remise_taux         Int           @default(0)
+  type_invoice        InvoiceType   @default(sale)
+  paymentMethod       String        @db.VarChar(222)
+  clientSellerName    String        @db.VarChar(222)
+  fne_reference       String?       @db.Text
+  fne_invoice_id      String?       @db.VarChar(255) // UUID de la facture FNE (pour les remboursements)
+  fne_token           String?       @db.Text
+  fne_token_value     String?       @db.Text
+  is_refund           Boolean       @default(false)
+  original_invoice_id Int?
+  status              InvoiceStatus @default(pending)
+  date_creation       DateTime      @default(now())
+  date_modification   DateTime      @updatedAt
+
+  // Relations
+  company         Company       @relation(fields: [uid_companie], references: [uid_companie], onDelete: Cascade)
+  pointdevente    PointDeVente  @relation(fields: [pointdeventeid], references: [id], onDelete: Cascade)
+  client          Client        @relation(fields: [clientid], references: [id], onDelete: Cascade)
+  items           ItemInvoice[]
+  itemsReceved    ItemsInvoiceReceved[]
+  logs            InvoiceLog[]
+  originalInvoice Invoice?      @relation("RefundInvoice", fields: [original_invoice_id], references: [id])
+  refunds         Invoice[]     @relation("RefundInvoice")
+
+  @@index([uid_companie])
+  @@index([uid_invoice])
+  @@index([clientid])
+  @@index([pointdeventeid])
+  @@map("invoices")
+}
+
+enum InvoiceType {
+  sale
+  purchase
+}
+
+enum InvoiceStatus {
+  pending
+  certified
+  rejected
+  refunded
+}
+
+// ==================== ITEMS INVOICES ====================
+model ItemInvoice {
+  id                Int      @id @default(autoincrement())
+  uid_invoice       String   @db.VarChar(255)
+  uid_companie      String   @db.VarChar(255)
+  reference         String   @db.VarChar(225)
+  description       String   @db.VarChar(225)
+  quantity          Int
+  amount            Int
+  discount          Int      @default(0)
+  measurementUnit   String   @db.VarChar(225)
+  taxes             String   @db.VarChar(225)
+  customTaxesname   String?  @db.VarChar(225)
+  customTaxesamount Int      @default(0)
+  fne_item_id       String?  @db.VarChar(255)
+  date_creation     DateTime @default(now())
+
+  // Relations
+  invoice Invoice @relation(fields: [uid_invoice], references: [uid_invoice], onDelete: Cascade)
+  company Company @relation(fields: [uid_companie], references: [uid_companie], onDelete: Cascade)
+
+  @@index([uid_invoice])
+  @@index([uid_companie])
+  @@map("items_invoices")
+}
+
+// ==================== ITEMS INVOICES RECEIVED FROM FNE ====================
+model ItemsInvoiceReceved {
+  id                Int      @id @default(autoincrement())
+  invoice_id        Int      // ID de la facture dans notre système
+  fne_item_id       String   @db.VarChar(255) // ID de l'article dans FNE
+  quantity          Int
+  reference         String   @db.VarChar(225)
+  description       String   @db.VarChar(500)
+  amount            Decimal  @db.Decimal(15, 2)
+  discount          Decimal  @default(0) @db.Decimal(15, 2)
+  measurementUnit   String   @db.VarChar(225)
+  taxes             Json?    // Tableau des taxes [{vatRateId, amount, name, shortName}]
+  customTaxes       Json?    // Tableau des taxes personnalisées
+  date_creation     DateTime @default(now())
+
+  // Relations
+  invoice Invoice @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+
+  @@unique([invoice_id, fne_item_id])
+  @@index([invoice_id])
+  @@index([fne_item_id])
+  @@map("items_invoices_receved")
+}
+
+// ==================== INVOICE LOGS ====================
+model InvoiceLog {
+  id             Int      @id @default(autoincrement())
+  uid_companie   Int
+  pointdeventeid Int
+  uid_invoice    Int
+  data_send      Json
+  data_receved   Json
+  code_response  String   @db.VarChar(222)
+  msg_response   String   @db.Text
+  userid         Int
+  token_receced  String?  @db.Text
+  date_creation  DateTime @default(now())
+
+  // Relations
+  company      Company      @relation(fields: [uid_companie], references: [id], onDelete: Cascade)
+  pointdevente PointDeVente @relation(fields: [pointdeventeid], references: [id], onDelete: Cascade)
+  invoice      Invoice      @relation(fields: [uid_invoice], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userid], references: [id], onDelete: Cascade)
+
+  @@index([uid_companie])
+  @@index([uid_invoice])
+  @@map("invoice_logs")
+}
+
+

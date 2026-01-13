@@ -1,0 +1,31 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond avec dégradé -->
+  <defs>
+    <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Nuage (Cloud) -->
+  <path d="M50 120 C30 120, 30 100, 50 100 C50 85, 65 75, 80 75 C95 75, 110 85, 110 100 C130 100, 130 120, 110 120 Z" fill="url(#gradient1)" />
+  
+  <!-- Document/Facture -->
+  <rect x="90" y="60" width="60" height="80" rx="4" fill="url(#gradient2)" />
+  <rect x="100" y="75" width="40" height="3" rx="1.5" fill="white" opacity="0.9" />
+  <rect x="100" y="85" width="30" height="3" rx="1.5" fill="white" opacity="0.7" />
+  <rect x="100" y="95" width="35" height="3" rx="1.5" fill="white" opacity="0.7" />
+  <rect x="100" y="105" width="25" height="3" rx="1.5" fill="white" opacity="0.7" />
+  
+  <!-- Checkmark de certification -->
+  <circle cx="135" cy="70" r="12" fill="#10b981" />
+  <path d="M130 70 L133 73 L140 66" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  
+  <!-- Texte "FNE" en bas -->
+  <text x="100" y="175" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#1f2937" text-anchor="middle">FNE</text>
+</svg>
+
