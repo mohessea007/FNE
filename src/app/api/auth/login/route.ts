@@ -63,12 +63,12 @@ export async function POST(request: Request) {
     // Set cookie
     const cookieStore = await cookies();
     cookieStore.set('auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24 hours
-      path: '/',
-    });
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production' && process.env.NEXTAUTH_URL?.startsWith('https'),
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24,
+    path: '/',
+  });
 
     // Return user data without password
     const { password: _, ...userWithoutPassword } = user;
