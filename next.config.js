@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  basePath: '/fneksaraagence',
+ // basePath: '/fneksaraagence',
   reactStrictMode: true,
   async headers() {
     return [
