@@ -1,6 +1,6 @@
 # Installation et Configuration CloudFNE
 
-## 1. Installation des dépendances
+## 1. Installation des dépendances patrick
 
 ```bash
 npm install --force
